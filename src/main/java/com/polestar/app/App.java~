@@ -1,0 +1,90 @@
+package com.polestar.app;
+
+import java.io.*;
+import java.sql.*;
+import java.util.Iterator;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+
+public class App 
+{
+    public static void main(String [] args) {
+
+    	String jdbcURL = "jdbc:mysql://localhost:3306/assets";
+    	String dbusername = "dbusername";
+    	String dbpassword = "dbpassword";
+    	
+    	String jsonFilePath = "./input.json";
+    	//Create JSONParser Object
+    	JSONParser jsonParser = new JSONParser();
+    	
+    	Connection connection = null;
+    	    	
+    	try {
+    		//Parse the content of JSON
+    		JSONObject jsonObject = (JSONObject) jsonParser.parse(new FileReader(jsonFilePath));
+    		//Set DB Connections
+    		connection = DriverManager.getConnection(jdbcURL, dbusername, dbpassword);
+    		connection.setAutoCommit(false);
+    		//Set SQLString values
+    		String sqlStr = "INSERT INTO assets (name, alarmcolor, _id, parameters, datasourcecount, _alerticon, elementcount, uniqueid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    		PreparedStatement statement = connection.prepareStatement(sqlStr);
+    		
+
+    		
+    		JSONArray jsonArray = (JSONArray) jsonObject;
+    		
+    		Iterator<String> iterator = jsonArray.iterator();
+    		while(iterator.hasNext()) {
+    			statement.setString(1, iterator.next(jsonObject.get("name")));
+    			statement.setString(2, iterator.next(jsonObject.get("alarmcolor")));
+    			statement.setString(3, iterator.next(jsonObject.get("_id")));
+    			statement.setString(5, iterator.next(jsonObject.get("datasourcecount")));
+    			statement.setString(6, iterator.next(jsonObject.get("_alerticon")));
+    			statement.setString(7, iterator.next(jsonObject.get("elementcount")));
+    			statement.setString(8, iterator.next(jsonObject.get("uniqueid")));
+    			
+    			//Get parameters array
+    			JSONArray parametersArray = (JSONArray) iterator.next(jsonObject.get("parameters"));
+    			
+    			//Extract parameters array
+    			Iterator<String> iteratorParams = parametersArray.iterator();
+    			String paramString = null;
+    			while(iteratorParams.hasNext()) {
+    				iterator.next(jsonObject.get("Key"));
+    			}
+    			statement.setString(4, paramString);
+    		}
+    		
+    		//execute sqlstr statement
+    		statement.executeBatch();
+    		
+    		connection.commit();
+    		connection.close();
+    		   		
+    	
+    	} catch (ParseException err) {
+    		err.printStackTrace();
+    		
+    	} catch (FileNotFoundException err) {
+    		err.printStackTrace();
+    		
+    	} catch (IOException err) {
+    		System.err.println(err);
+    		
+    	} catch (SQLException err) {
+    		err.printStackTrace();
+    		
+    		try {
+    			connection.rollback();
+    		} catch (SQLException e) {
+    			e.printStackTrace();
+    		}
+    	}
+   	        
+        
+    }
+}
